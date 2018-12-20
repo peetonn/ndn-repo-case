@@ -1,0 +1,6 @@
+[submodule "thirdparty/PyNDN2"]
+	path = thirdparty/PyNDN2
+	url = https://github.com/named-data/PyNDN2.git
+[submodule "thirdparty/PyCNL"]
+	path = thirdparty/PyCNL
+	url = https://github.com/named-data/PyCNL.git
