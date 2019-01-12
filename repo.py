@@ -27,6 +27,7 @@ from pyndn import Name, Face
 from pyndn.util import Blob
 from pyndn.util.common import Common
 from pyndn.security import KeyChain, SafeBag
+from pyndn.meta_info import MetaInfo
 from pycnl import Namespace
 from pycnl.generalized_object import GeneralizedObjectStreamHandler
 
@@ -138,8 +139,9 @@ def dump(*list):
     for element in list:
         result += (element if type(element) is str else str(element)) + " "
     print(result)
-
+replyMeta = True
 def main():
+    global replyMeta
     # The default Face will connect using a Unix socket, or to "localhost".
     face = Face()
 
@@ -152,30 +154,46 @@ def main():
     face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName())
 
     publishIntervalMs = 30.0
-    stream = Namespace("/ndn/repo/case/test", keyChain)
-    dump("Register prefix", stream.name)
-    stream.setFace(face,
-      lambda prefixName: dump("Register failed for prefix", prefixName),
-      lambda prefixName, callbackId: dump("Register success for prefix", prefixName))
+    nmspc = Namespace("/ndn/repo/case/test", keyChain)
+
+    dump("Register prefix", nmspc.name)
+    # Set the face and register to receive Interests.
+    nmspc.setFace(face,
+      lambda prefixName: dump("Register failed for prefix", prefixName))
+
+    metaInfo = MetaInfo()
+    metaInfo.setFreshnessPeriod(30)
+
+    def onObjectNeeded(namespace, neededNamespace, callbackID):
+        global replyMeta
+        dump("NEEDED", neededNamespace.name)
+        timestamp = time.time()
+
+        if neededNamespace.name[-1].toEscapedString() == '_meta':
+            if not replyMeta:
+                dump(" > IGNORE")
+                return False
+
+            metaNamespace = neededNamespace[str(timestamp)]
+            metaNamespace.setNewDataMetaInfo(metaInfo)
+            dump(" > REPLY META", metaNamespace.name)
+            metaNamespace.serializeObject(Blob.fromRawStr("metadata"))
+            return True
+
+        if neededNamespace.name[-1].toEscapedString() == '_latest':
+            dump(" > IGNORE")
+            return False
+
+        return False
+
+    nmspc.addOnObjectNeeded(onObjectNeeded)
 
     # Loop, producing a new object every previousPublishMs milliseconds (and
     # also calling processEvents()).
-    consumeDelay = 10 # start fetching after 10 seconds
-    startTs = Common.getNowMilliseconds()
     while True:
         face.processEvents()
-        now = Common.getNowMilliseconds()
-        if now - startTs >= consumeDelay:
-            consumeStream = Namespace("/ndn/repo/case/test")
-            consumeStream.setFace(face)
-
-            def onNewObject(sequenceNumber, contentMetaInfo, objectNamespace):
-                dump("Got generalized object, sequenceNumber", sequenceNumber,
-                    ", name ", objectNamespace.getName().toUri())
-            pipelineSize = 3
-            stream.setHandler(
-                GeneralizedObjectStreamHandler(pipelineSize, onNewObject)).objectNeeded()
-
+        # We need to sleep for a few milliseconds so we don't use 100% of the CPU.
         time.sleep(0.01)
 
+replyMeta = (len(sys.argv) == 1)
 main()

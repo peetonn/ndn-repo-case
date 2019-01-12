@@ -24,7 +24,7 @@ test_generalized_object_stream_producer (which must be running).
 
 import time, sys
 from pyndn import Face
-from pycnl import Namespace
+from pycnl import Namespace, NamespaceState
 from pycnl.generalized_object import GeneralizedObjectStreamHandler
 
 def dump(*list):
@@ -33,23 +33,42 @@ def dump(*list):
         result += (element if type(element) is str else str(element)) + " "
     print(result)
 
+run = True
+requestLatest = False
 def main():
+    global requestLatest, run
     # The default Face will connect using a Unix socket, or to "localhost".
     face = Face()
 
-    stream = Namespace("/ndn/repo/case/test")
-    stream.setFace(face)
+    nmspc = Namespace("/ndn/repo/case/test")
+    nmspc.setFace(face)
 
-    def onNewObject(sequenceNumber, contentMetaInfo, objectNamespace):
-        dump("Got generalized object, sequenceNumber", sequenceNumber,
-             ", name ", objectNamespace.getName().toUri())
-    pipelineSize = 3
-    stream.setHandler(
-      GeneralizedObjectStreamHandler(pipelineSize, onNewObject)).objectNeeded()
+    def namespaceStateChanged(namespace, changedNamespace, state, callbackId):
+        global requestLatest, run
+        # dump("namespace state changed: ", namespace.name, changedNamespace.name, state)
+        if state == NamespaceState.OBJECT_READY:
+            if changedNamespace.name[-2].toEscapedString() == "_meta":
+                requestLatest = True
+            dump(" > RECEIVED ", changedNamespace.name, changedNamespace.getObject().toRawStr())
+            if changedNamespace.name[-2].toEscapedString() == "_latest":
+                dump("DONE")
+                run = False
+        if state == NamespaceState.INTEREST_TIMEOUT:
+            if changedNamespace.name[-1].toEscapedString() == "_latest":
+                requestLatest = True
 
-    while True:
+    nmspc.addOnStateChanged(namespaceStateChanged)
+    dump("REQUEST _meta")
+    nmspc["_meta"].objectNeeded(True)
+    nmspc["_latest"].setMaxInterestLifetime(1000)
+
+    while run:
         face.processEvents()
         # We need to sleep for a few milliseconds so we don't use 100% of the CPU.
         time.sleep(0.01)
+        if requestLatest:
+            requestLatest = False
+            dump("REQUEST _latest")
+            nmspc["_latest"].objectNeeded(True)
 
 main()
