@@ -160,10 +160,22 @@ def main():
 
     # Loop, producing a new object every previousPublishMs milliseconds (and
     # also calling processEvents()).
-    previousPublishMs = 0
+    consumeDelay = 10 # start fetching after 10 seconds
+    startTs = Common.getNowMilliseconds()
     while True:
         face.processEvents()
-        # We need to sleep for a few milliseconds so we don't use 100% of the CPU.
+        now = Common.getNowMilliseconds()
+        if now - startTs >= consumeDelay:
+            consumeStream = Namespace("/ndn/repo/case/test")
+            consumeStream.setFace(face)
+
+            def onNewObject(sequenceNumber, contentMetaInfo, objectNamespace):
+                dump("Got generalized object, sequenceNumber", sequenceNumber,
+                    ", name ", objectNamespace.getName().toUri())
+            pipelineSize = 3
+            stream.setHandler(
+                GeneralizedObjectStreamHandler(pipelineSize, onNewObject)).objectNeeded()
+
         time.sleep(0.01)
 
 main()
