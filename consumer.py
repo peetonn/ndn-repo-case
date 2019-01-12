@@ -43,6 +43,11 @@ def main():
     nmspc = Namespace("/ndn/repo/case/test")
     nmspc.setFace(face)
 
+    def requestMeta():
+        dump("REQUEST _meta")
+        nmspc["_meta"].setMaxInterestLifetime(3000)
+        nmspc["_meta"].objectNeeded(True)
+
     def namespaceStateChanged(namespace, changedNamespace, state, callbackId):
         global requestLatest, run
         # dump("namespace state changed: ", namespace.name, changedNamespace.name, state)
@@ -56,10 +61,11 @@ def main():
         if state == NamespaceState.INTEREST_TIMEOUT:
             if changedNamespace.name[-1].toEscapedString() == "_latest":
                 requestLatest = True
+            if changedNamespace.name[-1].toEscapedString() == "_meta":
+                requestMeta()
 
     nmspc.addOnStateChanged(namespaceStateChanged)
-    dump("REQUEST _meta")
-    nmspc["_meta"].objectNeeded(True)
+    requestMeta()
     nmspc["_latest"].setMaxInterestLifetime(1000)
 
     while run:

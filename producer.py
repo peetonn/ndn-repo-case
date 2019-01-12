@@ -141,8 +141,9 @@ def dump(*list):
     print(result)
 
 replyMeta = True
+metaNumber = 1
 def main():
-    global replyMeta
+    global replyMeta, metaNumber
     # The default Face will connect using a Unix socket, or to "localhost".
     face = Face()
 
@@ -166,7 +167,7 @@ def main():
     metaInfo.setFreshnessPeriod(30)
 
     def onObjectNeeded(namespace, neededNamespace, callbackID):
-        global replyMeta
+        global replyMeta, metaNumber
         dump("NEEDED", neededNamespace.name)
         timestamp = time.time()
 
@@ -174,11 +175,11 @@ def main():
             if not replyMeta:
                 dump(" > IGNORE")
                 return False
-
-            metaNamespace = neededNamespace["<timestamp>"] #neededNamespace[str(timestamp)]
+            metaNamespace = neededNamespace[str(metaNumber)] #neededNamespace[str(timestamp)]
             metaNamespace.setNewDataMetaInfo(metaInfo)
             dump(" > REPLY META", metaNamespace.name)
             metaNamespace.serializeObject(Blob.fromRawStr("metadata"))
+            metaNumber += 1
             return True
 
         if neededNamespace.name[-1].toEscapedString() == '_latest':
