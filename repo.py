@@ -176,7 +176,7 @@ def main():
                 dump(" > IGNORE")
                 return False
 
-            metaNamespace = neededNamespace[str(metaNumber)] #neededNamespace[str(timestamp)]
+            metaNamespace = neededNamespace[Name.Component.fromVersion(metaNumber)]
             metaNamespace.setNewDataMetaInfo(metaInfo)
             dump(" > REPLY META", metaNamespace.name)
             metaNamespace.serializeObject(Blob.fromRawStr("metadata"))
