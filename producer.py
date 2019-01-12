@@ -175,7 +175,7 @@ def main():
                 dump(" > IGNORE")
                 return False
 
-            metaNamespace = neededNamespace[str(timestamp)]
+            metaNamespace = neededNamespace["<timestamp>"] #neededNamespace[str(timestamp)]
             metaNamespace.setNewDataMetaInfo(metaInfo)
             dump(" > REPLY META", metaNamespace.name)
             metaNamespace.serializeObject(Blob.fromRawStr("metadata"))
