@@ -26,16 +26,19 @@ class Echo(object):
 
         dump("NEEDED ", interest.getName())
 
-        # Make and sign a Data packet.
-        data = Data(interest.getName().append(Name.Component.fromTimestamp(1547495389273.676)))
-        content = "metadata"
+        if interest.getName()[-1].toEscapedString() == '_latest' :
+            # Make and sign a Data packet.
+            data = Data(interest.getName().append(Name.Component.fromTimestamp(1547495389273.676)))
+            content = "latest pointer"
 
-        data.setContent(content)
-        data.setMetaInfo(metaInfo)
-        self._keyChain.sign(data, self._certificateName)
+            data.setContent(content)
+            data.setMetaInfo(metaInfo)
+            self._keyChain.sign(data, self._certificateName)
 
-        dump(" > REPLY", data.getName())
-        face.putData(data)
+            dump(" > REPLY", data.getName())
+            face.putData(data)
+        else:
+            dump(" > IGNORE")
 
     def onRegisterFailed(self, prefix):
         self._responseCount += 1
