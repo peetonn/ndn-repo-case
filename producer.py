@@ -185,7 +185,7 @@ def main():
             return True
 
         if neededNamespace.name[-1].toEscapedString() == '_latest':
-            latestNamespace = neededNamespace[str(timestamp)]
+            latestNamespace = neededNamespace[Name.Component.fromTimestamp(timestamp)]
             latestNamespace.setNewDataMetaInfo(metaInfo)
             dump(" > REPLY LATEST", latestNamespace.name)
             latestNamespace.serializeObject(Blob.fromRawStr("latest data pointer"))
