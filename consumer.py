@@ -30,8 +30,6 @@ def main():
 
     counter = Counter()
 
-    word = "_meta"
-
     nameMeta = Name("/ndn/repo/case/test/_meta")
     
     def request(n):
