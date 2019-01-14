@@ -31,23 +31,16 @@ class Echo(object):
         dump("NEEDED ", interest.getName())
 
         if interest.getName()[-1].toEscapedString() == self._keyword :
-
-            if self._keyword == '_latest': 
-                # add timestamp
-                data = Data(interest.getName().append(Name.Component.fromTimestamp(time.time())))
-            else:
-                # fixed _meta
-                data = Data(interest.getName().append(Name.Component.fromTimestamp(1547495389273.676)))
-            content = "latest pointer"
+            data = Data(interest.getName().append(Name.Component.fromTimestamp(1547495389273.676)))
+            content = "metadata"
 
             data.setContent(content)
             data.setMetaInfo(metaInfo)
             self._keyChain.sign(data, self._certificateName)
 
             dump(" > REPLY", data.getName())
-            # face.putData(data)
 
-            # SIMULATE: store pending interest
+            # SIMULATE data generation: store pending interest and add data later
             self._memCache.storePendingInterest(interest, face)
             self._memCache.add(data)
         else:
@@ -66,10 +59,7 @@ def main():
     face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName())
     memCache = MemoryContentCache(face)
 
-    if sys.argv[1] == 'repo':
-        echo = Echo('_meta', keyChain, keyChain.getDefaultCertificateName(), memCache)
-    else:
-        echo = Echo('_latest', keyChain, keyChain.getDefaultCertificateName(), memCache)
+    echo = Echo('_meta', keyChain, keyChain.getDefaultCertificateName(), memCache)
 
     prefix = Name("/ndn/repo/case/test")
     dump("Register prefix", prefix.toUri())

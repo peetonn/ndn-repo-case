@@ -33,7 +33,6 @@ def main():
     word = "_meta"
 
     nameMeta = Name("/ndn/repo/case/test/_meta")
-    nameLatest = Name("/ndn/repo/case/test/_latest")
     
     def request(n):
         dump("REQUEST", n.toUri())
@@ -45,10 +44,8 @@ def main():
     nReceived = 0
 
     currName = nameMeta
-    while counter._callbackCount < 2:
+    while True:
         if nReceived < counter._callbackCount:
-            if nReceived == 0:
-                currName = nameLatest
             nReceived = counter._callbackCount
             request(currName)
 
