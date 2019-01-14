@@ -28,7 +28,7 @@ class Echo(object):
 
         if interest.getName()[-1].toEscapedString() == '_latest' :
             # Make and sign a Data packet.
-            data = Data(interest.getName().append(Name.Component.fromTimestamp(1547495389273.676)))
+            data = Data(interest.getName().append(Name.Component.fromTimestamp(time.time())))
             content = "latest pointer"
 
             data.setContent(content)
