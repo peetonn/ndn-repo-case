@@ -2,6 +2,7 @@ import sys
 import time
 from pyndn import Name
 from pyndn import Face
+from pyndn import Interest
 
 def dump(*list):
     result = ""
@@ -31,12 +32,14 @@ def main():
 
     word = "_meta"
 
-    nameMeta = Name("/ndn/repo/case/_meta")
-    nameLatest = Name("/ndn/repo/case/_latest")
+    nameMeta = Name("/ndn/repo/case/test/_meta")
+    nameLatest = Name("/ndn/repo/case/test/_latest")
     
     def request(n):
         dump("REQUEST", n.toUri())
-        face.expressInterest(n, counter.onData, counter.onTimeout)
+        interest = Interest(n)
+        interest.setInterestLifetimeMilliseconds(3000)
+        face.expressInterest(interest, counter.onData, counter.onTimeout)
 
     request(nameMeta)
     nReceived = 0

@@ -54,7 +54,7 @@ def main():
 
     # Also use the default certificate name to sign data packets.
     echo = Echo(keyChain, keyChain.getDefaultCertificateName())
-    prefix = Name("/ndn/repo/case")
+    prefix = Name("/ndn/repo/case/test")
     dump("Register prefix", prefix.toUri())
     face.registerPrefix(prefix, echo.onInterest, echo.onRegisterFailed)
 
