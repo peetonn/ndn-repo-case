@@ -31,18 +31,23 @@ def main():
 
     word = "_meta"
 
-    name = Name("/ndn/repo/case")
-    name.append(word)
+    nameMeta = Name("/ndn/repo/case/_meta")
+    nameLatest = Name("/ndn/repo/case/_latest")
     
-    def request():
-        dump("REQUEST", name.toUri())
-        face.expressInterest(name, counter.onData, counter.onTimeout)
-    request()
+    def request(n):
+        dump("REQUEST", n.toUri())
+        face.expressInterest(n, counter.onData, counter.onTimeout)
+
+    request(nameMeta)
     nReceived = 0
+
+    currName = nameMeta
     while True: #counter._callbackCount < 1:
         if nReceived < counter._callbackCount:
+            if nReceived == 0:
+                currName = nameLatest
             nReceived = counter._callbackCount
-            request()
+            request(currName)
 
         face.processEvents()
         # We need to sleep for a few milliseconds so we don't use 100% of the CPU.
