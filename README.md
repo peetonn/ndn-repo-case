@@ -1,5 +1,7 @@
 ## Run
 
+On three machines connected to the same LAN segment:
+
 1. Set up `PYTHONPATH`
 
 ```
@@ -12,6 +14,8 @@ export PYTHONPATH=`pwd`/thirdparty/PyNDN2/python:`pwd`/thirdparty/PyCNL/python:$
 nfd-start &> /tmp/nfd.log
 nfdc route add /ndn/repo/case <face-id>
 ```
+
+* `face-id` -- ethernet face
 
 3. Run scripts
 
@@ -30,5 +34,5 @@ python repo.py
 * 3rd machine
 
 ```
-python repo.py
+python consumer.py
 ```
