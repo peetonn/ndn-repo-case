@@ -53,14 +53,15 @@ def main():
         # dump("namespace state changed: ", namespace.name, changedNamespace.name, state)
         if state == NamespaceState.OBJECT_READY:
             if changedNamespace.name[-2].toEscapedString() == "_meta":
-                requestLatest = True
+                # requestLatest = True
+                requestMeta()
             dump(" > RECEIVED ", changedNamespace.name, changedNamespace.getObject().toRawStr())
-            if changedNamespace.name[-2].toEscapedString() == "_latest":
-                dump("DONE")
-                run = False
+            # if changedNamespace.name[-2].toEscapedString() == "_latest":
+            #     dump("DONE")
+            #     run = False
         if state == NamespaceState.INTEREST_TIMEOUT:
-            if changedNamespace.name[-1].toEscapedString() == "_latest":
-                requestLatest = True
+            # if changedNamespace.name[-1].toEscapedString() == "_latest":
+            #     requestLatest = True
             if changedNamespace.name[-1].toEscapedString() == "_meta":
                 requestMeta()
 
@@ -72,9 +73,9 @@ def main():
         face.processEvents()
         # We need to sleep for a few milliseconds so we don't use 100% of the CPU.
         time.sleep(0.01)
-        if requestLatest:
-            requestLatest = False
-            dump("REQUEST _latest")
-            nmspc["_latest"].objectNeeded(True)
+        # if requestLatest:
+        #     requestLatest = False
+        #     dump("REQUEST _latest")
+        #     nmspc["_latest"].objectNeeded(True)
 
 main()
