@@ -45,7 +45,7 @@ def main():
     nReceived = 0
 
     currName = nameMeta
-    while True: #counter._callbackCount < 1:
+    while counter._callbackCount < 2:
         if nReceived < counter._callbackCount:
             if nReceived == 0:
                 currName = nameLatest
