@@ -37,7 +37,7 @@ def main():
         metaInfo.setFreshnessPeriod(30)
         data.setMetaInfo(metaInfo)
         keyChain.sign(data)
-        dump("published frame", data.getName(), content)
+        # dump("published frame", data.getName(), content)
         memCache.add(data)
 
     metaVersion = 0
