@@ -100,7 +100,8 @@ int main()
     }
 
     // usleep(10);
-    ioService.dispatch(process);
+    // ioService.dispatch(process);
+    face.callLater(10, process);
   };
 
   updateMeta();
