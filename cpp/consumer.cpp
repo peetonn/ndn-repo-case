@@ -1,6 +1,7 @@
 //g++ -o consumer consumer.cpp -std=c++11 -I../../ndnrtc-thirdparty/ndn-cpp/build/include -L../../ndnrtc-thirdparty/ndn-cpp/build/lib -lndn-cpp
 #include <iostream>
 #include <chrono>
+#include <unistd.h>
 #include <ndn-cpp/name.hpp>
 #include <ndn-cpp/data.hpp>
 #include <ndn-cpp/interest.hpp>

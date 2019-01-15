@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <unistd.h>
 #include <ndn-cpp/name.hpp>
 #include <ndn-cpp/data.hpp>
 #include <ndn-cpp/interest.hpp>
@@ -18,7 +19,6 @@ int main()
   KeyChain keyChain = KeyChain();
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
   MemoryContentCache memCache = MemoryContentCache(&face);
-
   Name prefix("/ndn/repo/case/test");
 
   cout << "register prefix " << prefix << endl;
@@ -43,7 +43,7 @@ int main()
   function<void()> updateMeta = [prefix, &metaVersion, &keyChain, &memCache](){
     int64_t now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     stringstream ss;
-    ss << now << ":" << "s";
+    ss << "s:" << now;
 
     Data data(Name(prefix).append("_meta").appendVersion(metaVersion));
     data.setContent(Blob::fromRawStr(ss.str()));
