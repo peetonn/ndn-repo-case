@@ -1,5 +1,6 @@
 import time
 import sys
+import json
 from pyndn import Name
 from pyndn import Data
 from pyndn import Face
@@ -13,62 +14,83 @@ def dump(*list):
         result += (element if type(element) is str else str(element)) + " "
     print(result)
 
-metaInfo = MetaInfo()
-metaInfo.setFreshnessPeriod(30)
-
-class Echo(object):
-    def __init__(self, keyword, keyChain, certificateName, memCache):
-        self._keyword = keyword
-        self._keyChain = keyChain
-        self._certificateName = certificateName
-        self._responseCount = 0
-        self._memCache = memCache
-
-    def onDataNotFound(self, prefix, interest, face, interestFilterId, filter):
-        global metaInfo
-        self._responseCount += 1
-
-        dump("NEEDED ", interest.getName())
-
-        if interest.getName()[-1].toEscapedString() == self._keyword :
-            data = Data(interest.getName().append(Name.Component.fromTimestamp(1547495389273.676)))
-            content = "metadata"
-
-            data.setContent(content)
-            data.setMetaInfo(metaInfo)
-            self._keyChain.sign(data, self._certificateName)
-
-            dump(" > REPLY", data.getName())
-
-            # SIMULATE data generation: store pending interest and add data later
-            self._memCache.storePendingInterest(interest, face)
-            self._memCache.add(data)
-        else:
-            dump(" > IGNORE")
-
-    def onRegisterFailed(self, prefix):
-        self._responseCount += 1
-        dump("Register failed for prefix", prefix.toUri())
-
 def main():
-    # The default Face will connect using a Unix socket, or to "localhost".
     face = Face()
-
-    # Use the system default key chain and certificate name to sign commands.
     keyChain = KeyChain()
     face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName())
     memCache = MemoryContentCache(face)
 
-    echo = Echo('_meta', keyChain, keyChain.getDefaultCertificateName(), memCache)
+    def onRegisterFailed(prefix):
+        dump("Register failed for prefix", prefix.toUri())
 
     prefix = Name("/ndn/repo/case/test")
+
     dump("Register prefix", prefix.toUri())
-    memCache.registerPrefix(prefix, echo.onRegisterFailed, None, echo.onDataNotFound)
+    memCache.registerPrefix(prefix, onRegisterFailed, None, memCache.getStorePendingInterest())
+
+    latestFrameNo = 0
+    def generateFrame():
+        data = Data(Name(prefix).append('s').append(Name.Component.fromSequenceNumber(latestFrameNo)))
+        content = 'frame-data'
+        data.setContent(content)
+        metaInfo = MetaInfo()
+        metaInfo.setFreshnessPeriod(30)
+        data.setMetaInfo(metaInfo)
+        keyChain.sign(data)
+        dump("published frame", data.getName(), content)
+        memCache.add(data)
+
+    metaVersion = 0
+    def updateMeta():
+        data = Data(Name(prefix).append('_meta').append(Name.Component.fromVersion(metaVersion)))
+        content = json.dumps({'timestamp':time.time(), 'stream':'s'})
+        data.setContent(content)
+        metaInfo = MetaInfo()
+        metaInfo.setFreshnessPeriod(30)
+        data.setMetaInfo(metaInfo)
+        keyChain.sign(data)
+        dump("update meta", data.getName(), content)
+        memCache.add(data)
+
+    def updateLatest(fNo):
+        # data = Data(Name(prefix).append('_latest').append(Name.Component.fromVersion(metaVersion)))
+        data = Data(Name(prefix).append('s').append('_latest').append(Name.Component.fromTimestamp(time.time()*1000)))
+        content = Name(prefix).append('s').append(Name.Component.fromSequenceNumber(latestFrameNo)).toUri()
+        data.setContent(content)
+        metaInfo = MetaInfo()
+        metaInfo.setFreshnessPeriod(10)
+        data.setMetaInfo(metaInfo)
+        keyChain.sign(data)
+        dump("update _latest", data.getName(), content)
+        memCache.add(data)
+
+    metaUpdateInterval = 1
+    frameGenerationInterval = 1/25
+    latestUpdateInterval = 1/100
+    timestampCheck = { 'meta':time.time(), 'frame_generate': time.time(), 'latest_ptr': time.time() }
+
+    updateMeta()
+    generateFrame()
 
     while True:
+        now = time.time()
+
+        if now - timestampCheck['meta'] >= metaUpdateInterval:
+            timestampCheck['meta'] = now
+            metaVersion += 1
+            updateMeta()
+
+        if now - timestampCheck['frame_generate'] >= frameGenerationInterval:
+            timestampCheck['frame_generate'] = now
+            latestFrameNo += 1
+            generateFrame()
+
+        if now - timestampCheck['latest_ptr'] >= latestUpdateInterval:
+            timestampCheck['latest_ptr'] = now
+            updateLatest(latestFrameNo)
+
         face.processEvents()
-        # We need to sleep for a few milliseconds so we don't use 100% of the CPU.
-        time.sleep(0.01)
+        time.sleep(0.001)
 
     face.shutdown()
 
