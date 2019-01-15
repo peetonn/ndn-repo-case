@@ -1,4 +1,4 @@
-// g++ -o repo repo.cpp -std=c++11 -lndn-cpp -I../../ndnrtc-thirdparty/ndn-cpp/build/include -L../../ndnrtc-thirdparty/ndn-cpp/build/lib
+// g++ -o repo repo.cpp -std=c++11 -lndn-cpp -lboost_system -I../../ndnrtc-thirdparty/ndn-cpp/build/include -L../../ndnrtc-thirdparty/ndn-cpp/build/lib
 #include <iostream>
 #include <chrono>
 #include <unistd.h>
@@ -7,6 +7,8 @@
 #include <ndn-cpp/interest.hpp>
 #include <ndn-cpp/security/key-chain.hpp>
 #include <ndn-cpp/util/memory-content-cache.hpp>
+#include <ndn-cpp/threadsafe-face.hpp>
+#include <boost/asio.hpp>
 
 using namespace std;
 using namespace std::chrono;
@@ -14,7 +16,8 @@ using namespace ndn;
 
 int main()
 {
-  Face face = Face();
+  boost::asio::io_service ioService;
+  ThreadsafeFace face(ioService);
   KeyChain keyChain = KeyChain();
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
   Name prefix("/ndn/repo/case/test");
@@ -55,22 +58,15 @@ int main()
         };
 
       cout << "REQUEST " << i.getName() << endl;
-      face.expressInterest(i, onData);
+      face.expressInterest(i, onData, OnTimeout(), OnNetworkNack());
     };
 
     int metaFetchInterval = 500;
-    int64_t now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-    int64_t timestampCheck = now;
+    function<void()> pollMeta = [&](){
+      fetchMeta();
+      face.callLater(metaFetchInterval, pollMeta);
+    };
 
-    while (true) {
-      now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-      if (now - timestampCheck >= metaFetchInterval)
-      {
-        timestampCheck = now;
-        fetchMeta();
-      }
-
-      face.processEvents();
-      usleep(10);
-    }
+    pollMeta();
+    ioService.run();
 }

@@ -1,4 +1,4 @@
-// g++ -o producer producer.cpp -std=c++11 -I../../ndnrtc-thirdparty/ndn-cpp/build/include -L../../ndnrtc-thirdparty/ndn-cpp/build/lib -lndn-cpp
+// g++ -o producer producer.cpp -std=c++11 -lndn-cpp -lboost_system -I../../ndnrtc-thirdparty/ndn-cpp/build/include -L../../ndnrtc-thirdparty/ndn-cpp/build/lib
 
 #include <iostream>
 #include <chrono>
@@ -8,6 +8,8 @@
 #include <ndn-cpp/interest.hpp>
 #include <ndn-cpp/security/key-chain.hpp>
 #include <ndn-cpp/util/memory-content-cache.hpp>
+#include <ndn-cpp/threadsafe-face.hpp>
+#include <boost/asio.hpp>
 
 using namespace std;
 using namespace std::chrono;
@@ -15,7 +17,8 @@ using namespace ndn;
 
 int main()
 {
-  Face face = Face();
+  boost::asio::io_service ioService;
+  ThreadsafeFace face(ioService);
   KeyChain keyChain = KeyChain();
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
   MemoryContentCache memCache = MemoryContentCache(&face);
@@ -72,10 +75,8 @@ int main()
   int64_t now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
   map<string, int64_t> timestampCheck {{"meta", now},{"frame_generate", now}, {"latest_ptr", now}};
 
-  updateMeta();
-  generateFrame();
-
-  while (true) {
+  function<void()> process = [&]()
+  {
     now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
     if (now - timestampCheck["meta"] >= metaUpdateInterval)
@@ -98,7 +99,13 @@ int main()
       updateLatest();
     }
 
-    face.processEvents();
-    usleep(10);
-  }
+    // usleep(10);
+    ioService.dispatch(process);
+  };
+
+  updateMeta();
+  generateFrame();
+  process();
+
+  ioService.run();
 }

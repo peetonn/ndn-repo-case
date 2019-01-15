@@ -1,4 +1,4 @@
-//g++ -o consumer consumer.cpp -std=c++11 -I../../ndnrtc-thirdparty/ndn-cpp/build/include -L../../ndnrtc-thirdparty/ndn-cpp/build/lib -lndn-cpp
+//g++ -o consumer consumer.cpp -std=c++11 -lndn-cpp -lboost_system -I../../ndnrtc-thirdparty/ndn-cpp/build/include -L../../ndnrtc-thirdparty/ndn-cpp/build/lib
 #include <iostream>
 #include <chrono>
 #include <unistd.h>
