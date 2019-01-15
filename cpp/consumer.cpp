@@ -7,6 +7,8 @@
 #include <ndn-cpp/interest.hpp>
 #include <ndn-cpp/security/key-chain.hpp>
 #include <ndn-cpp/util/memory-content-cache.hpp>
+#include <ndn-cpp/threadsafe-face.hpp>
+#include <boost/asio.hpp>
 
 using namespace std;
 using namespace std::chrono;
@@ -22,7 +24,9 @@ vector<string>& split(const string &s, char delim, vector<string> &elems) {
 
 int main()
 {
-  Face face = Face();
+  boost::asio::io_service ioService;
+  ptr_lib::shared_ptr<boost::asio::io_service::work> work = ptr_lib::make_shared<boost::asio::io_service::work>(ioService);
+  ThreadsafeFace face(ioService);
   KeyChain keyChain = KeyChain();
   face.setCommandSigningInfo(keyChain, keyChain.getDefaultCertificateName());
   Name prefix("/ndn/repo/case/test");
@@ -31,7 +35,7 @@ int main()
     cout << "REQUEST " << n << endl;
     Interest i(n);
     i.setInterestLifetimeMilliseconds(3000);
-    face.expressInterest(i, onData, onTimeout);
+    face.expressInterest(i, onData, onTimeout, OnNetworkNack());
   };
 
   OnData onLatest;
@@ -58,11 +62,13 @@ int main()
   int latestFrame, ppSize = 3, pendingFrames = 0, nFetched;
   function<void()> fetchFrames;
 
-  auto onNewFrame = [&pendingFrames, &nFetched, &fetchFrames](const ptr_lib::shared_ptr<const Interest> interest, const ptr_lib::shared_ptr<Data> data){
+  auto onNewFrame = [&ioService, &work, &pendingFrames, &nFetched, &fetchFrames](const ptr_lib::shared_ptr<const Interest> interest, const ptr_lib::shared_ptr<Data> data){
     pendingFrames--;
     nFetched++;
     fetchFrames();
     cout << " > RECEIVED frame " << data->getName() << endl;
+
+    if (nFetched >= 5) { work.reset(); ioService.stop(); }
   };
 
   function<void(const ptr_lib::shared_ptr<const Interest> i)>
@@ -71,8 +77,8 @@ int main()
     request(i->getName(), onNewFrame, onFrameTimeout);
   };
 
-  fetchFrames = [ppSize, onNewFrame, onFrameTimeout, request, &pendingFrames, &latestFrame, &framesPrefix](){
-    while (pendingFrames < ppSize) {
+  fetchFrames = [ppSize, onNewFrame, onFrameTimeout, request, &work, &pendingFrames, &latestFrame, &framesPrefix](){
+    while (pendingFrames < ppSize && work) {
       if (framesPrefix.size() == 0)
         throw runtime_error("frames prefix is not set!");
       request(Name(framesPrefix).appendSequenceNumber(latestFrame), onNewFrame, onFrameTimeout);
@@ -89,10 +95,7 @@ int main()
   };
 
   requestMeta(ptr_lib::shared_ptr<const Interest>());
-  while (nFetched < 5) {
-    face.processEvents();
-    usleep(10);
-  }
+  ioService.run();
 
   face.shutdown();
 }
