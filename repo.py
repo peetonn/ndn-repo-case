@@ -27,15 +27,15 @@ class Echo(object):
         global savedMeta
         self._responseCount += 1
 
-        dump("NEEDED ", interest.getName())
-
         if interest.getName()[-1].toEscapedString() == '_meta' :
+            dump("NEEDED ", interest.getName())
             if savedMeta:
-                dump(" > REPLY SAVED", savedMeta.getName())
+                dump(" > REPLY ", savedMeta.getName())
                 face.putData(savedMeta)
             else:
                 dump(" > STORAGE EMPTY")
         elif interest.getName()[-1].toEscapedString() == '_latest' :
+            dump("NEEDED ", interest.getName())
             dump(" > IGNORE")
 
     def onRegisterFailed(self, prefix):
