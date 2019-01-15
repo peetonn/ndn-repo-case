@@ -35,7 +35,7 @@ class Echo(object):
                 face.putData(savedMeta)
             else:
                 dump(" > STORAGE EMPTY")
-        else:
+        elif interest.getName()[-1].toEscapedString() == '_latest' :
             dump(" > IGNORE")
 
     def onRegisterFailed(self, prefix):

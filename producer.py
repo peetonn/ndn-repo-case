@@ -49,7 +49,7 @@ def main():
         metaInfo.setFreshnessPeriod(30)
         data.setMetaInfo(metaInfo)
         keyChain.sign(data)
-        dump("update meta", data.getName(), content)
+        # dump("update meta", data.getName(), content)
         memCache.add(data)
 
     def updateLatest(fNo):
@@ -61,7 +61,7 @@ def main():
         metaInfo.setFreshnessPeriod(10)
         data.setMetaInfo(metaInfo)
         keyChain.sign(data)
-        dump("update _latest", data.getName(), content)
+        # dump("update _latest", data.getName(), content)
         memCache.add(data)
 
     metaUpdateInterval = 1
@@ -72,6 +72,7 @@ def main():
     updateMeta()
     generateFrame()
 
+    dump("running...")
     while True:
         now = time.time()
 
